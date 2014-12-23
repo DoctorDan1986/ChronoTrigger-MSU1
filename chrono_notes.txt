@@ -1,6 +1,14 @@
 Chrono Trigger
 HiROM 32MBit
 
+========
+= TODO =
+========
+* Fade-in/Fade-out
+* Map music change
+* Attract fix
+* Title screen
+
 ==============
 = Free Space =
 ==============

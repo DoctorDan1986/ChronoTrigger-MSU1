@@ -1,12 +1,12 @@
 hirom
 
 ; MSU memory map I/O
-MSU_STATUS = $2000
-MSU_ID = $2002
-MSU_AUDIO_TRACK_LO = $2004
-MSU_AUDIO_TRACK_HI = $2005
-MSU_AUDIO_VOLUME = $2006
-MSU_AUDIO_CONTROL = $2007
+MSU_STATUS = $002000
+MSU_ID = $002002
+MSU_AUDIO_TRACK_LO = $002004
+MSU_AUDIO_TRACK_HI = $002005
+MSU_AUDIO_VOLUME = $002006
+MSU_AUDIO_CONTROL = $002007
 
 ; SPC communication ports
 SPC_COMM_0 = $2140
@@ -40,9 +40,9 @@ org $C01B8B
 org $C22F49
 	jsl MSU_Main
 	
-; Map music change
-;org $C223F9
-;	jsl MSU_Main
+; Overworld music change
+org $C223F9
+	jsl MSU_Main
 
 ; Entering battle
 org $C01BCE
@@ -101,7 +101,7 @@ MSU_Main:
 	cmp #$81
 	bne +
 	bra .CallOriginalRoutine
-	
++
 ; Call original routine if MSU-1 is not found
 .CallOriginalRoutine:
 	rep #$20
