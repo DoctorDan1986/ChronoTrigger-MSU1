@@ -173,7 +173,14 @@ MSU_ResumeMusic:
 	sta CurrentSong
 	lda #$03
 	sta MSU_AUDIO_CONTROL
-	clc
+	
+	; Play silence after resuming music to
+	; reload correct SFX samples
+	lda #$10
+	sta $1E00
+	lda #$00
+	sta $1E01
+	sec
 	rts
 	
 MSU_PauseMusic:

@@ -5,9 +5,11 @@ HiROM 32MBit
 = TODO =
 ========
 * Fade-in/Fade-out
-* Map music change
 * Attract fix
 * Title screen
+* Hook fanfare ?
+* Interrupt music during Marle scene
+* Add code for looping/no-looping songs
 
 ==============
 = Free Space =
