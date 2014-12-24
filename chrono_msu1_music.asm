@@ -26,6 +26,8 @@ FULL_VOLUME = $FF
 DUCKED_VOLUME = $30
 
 ; Variables
+MusicCommand = $1E00
+MusicRequested = $1E01
 CurrentSong = $1EE0
 
 ; Called during attract
@@ -75,7 +77,7 @@ MSU_Main:
 	bne .CallOriginalRoutine
 	
 .MSUFound:
-	lda $1E00
+	lda.w MusicCommand
 	; Play Music
 	cmp #$10
 	bne +
@@ -118,7 +120,7 @@ MSU_Main:
 	rtl
 
 MSU_PlayMusic:
-	lda $1E01
+	lda.w MusicRequested
 	beq .StopMSUMusic
 	cmp CurrentSong
 	beq .SongAlreadyPlaying
@@ -138,7 +140,8 @@ MSU_PlayMusic:
 	bne .StopMSUMusic
 
 	; Play the song
-	lda #$03
+	lda.w MusicRequested
+	jsr TrackNeedLooping
 	sta MSU_AUDIO_CONTROL
 	
 	; Set volume
@@ -146,7 +149,7 @@ MSU_PlayMusic:
 	sta.w MSU_AUDIO_VOLUME
 	
 	; Only store current song if we were able to play the song
-	lda $1E01
+	lda.w MusicRequested
 	sta CurrentSong
 	
 	; Set SPC music to silence
@@ -169,7 +172,7 @@ MSU_PlayMusic:
 	bra .Exit
 	
 MSU_ResumeMusic:
-	lda $1E01
+	lda.w MusicRequested
 	sta CurrentSong
 	lda #$03
 	sta MSU_AUDIO_CONTROL
@@ -177,9 +180,9 @@ MSU_ResumeMusic:
 	; Play silence after resuming music to
 	; reload correct SFX samples
 	lda #$10
-	sta $1E00
+	sta.w MusicCommand
 	lda #$00
-	sta $1E01
+	sta.w MusicRequested
 	sec
 	rts
 	
@@ -188,4 +191,35 @@ MSU_PauseMusic:
 	sta MSU_AUDIO_CONTROL
 	sta CurrentSong
 	sec
+	rts
+	
+TrackNeedLooping:
+	; 1.01 A Premonition
+	cmp #48
+	beq .noLooping
+	; 1.10 Good Night
+	cmp #43
+	beq .noLooping
+	; 1.14 Huh ?!
+	cmp #37
+	beq .noLooping
+	; 1.16 A Prayer for the Wayfarer
+	cmp #36
+	beq .noLooping
+	; 2.02 Mystery from the Past
+	cmp #46
+	beq .noLooping
+	; 2.12 Fanfare 2
+	cmp #28
+	beq .noLooping
+	; 2.15 Fanfare 3
+	cmp #61
+	beq .noLooping
+	; 2.22 Fiedlord's Keep
+	cmp #72
+	beq .noLooping
+	lda #$03
+	rts
+.noLooping
+	lda #$01
 	rts
