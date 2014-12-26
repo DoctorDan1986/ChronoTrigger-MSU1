@@ -8,8 +8,7 @@ HiROM 32MBit
 * Attract fix
 * Title screen
 * Hook fanfare ?
-* Interrupt music during Marle scene
-* Add code for looping/no-looping songs
+* Interrupt music during Marle scene (it's a fade-in/fade-out)
 
 ==============
 = Free Space =
@@ -165,7 +164,7 @@ $C0/3C3E 8D 00 1E    STA $1E00  [$00:1E00]   A:0110 X:01A9 Y:01A9 P:envMxdIzc
 $C0/3C41 86 C7       STX $C7    [$00:01C7]   A:0110 X:01A9 Y:01A9 P:envMxdIzc
 $C0/3C43 22 04 00 C7 JSL $C70004[$C7:0004]   A:0110 X:01A9 Y:01A9 P:envMxdIzc
 
-; Opening a black chest
+; Opening a black chest / Collecting fanfare (interrupt music)
 $C0/3CA1 E8          INX                     A:0114 X:01E5 Y:01E5 P:envMxdizc
 $C0/3CA2 BF 01 20 7F LDA $7F2001,x[$7F:21E7] A:0114 X:01E6 Y:01E5 P:envMxdizc
 $C0/3CA6 8D 01 1E    STA $1E01  [$00:1E01]   A:012E X:01E6 Y:01E5 P:envMxdizc
@@ -181,6 +180,7 @@ $C0/3C3C A9 10       LDA #$10                A:011E X:01EC Y:01EC P:envMxdizc
 $C0/3C3E 8D 00 1E    STA $1E00  [$00:1E00]   A:0110 X:01EC Y:01EC P:envMxdizc
 $C0/3C41 86 C7       STX $C7    [$00:01C7]   A:0110 X:01EC Y:01EC P:envMxdizc
 $C0/3C43 22 04 00 C7 JSL $C70004[$C7:0004]   A:0110 X:01EC Y:01EC P:envMxdizc
+
 
 ============
 = Routines =
