@@ -1,15 +1,25 @@
 Chrono Trigger MSU-1 hack
-Version 1.0
+Version 1.0 (WIP)
 by DarkShock
 
 This hack adds CD quality audio to Chrono trigger using the MSU-1 chip invented by byuu. For next version I do hope to include the FMV from the PS1 version !
 
 The hack has been tested on bsnes 075, higan 094 and SD2SNES.
 
+========
+= TODO =
+========
+* Fade-in/Fade-out
+* Attract fix
+* Title screen
+* Credits/Epoch fix
+* Hook fanfare ?
+* FMV from the PS1 version (Version 2.0)
+
 =====================
 = Creating the .pcm =
 =====================
-First get Chrono Symphony album in FLAC format. Extract them all to a folder.
+First get Chrono Symphony album in FLAC format (http://www.thechronosymphony.com/). Extract them all to a folder.
 Run decode_flac to convert FLAC files to WAV files
 Use create_pcm.bat to create the .pcm from WAV files.
 
