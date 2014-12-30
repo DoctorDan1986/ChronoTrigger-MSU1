@@ -45,42 +45,117 @@ FADE_STATE_IDLE = $00
 FADE_STATE_FADEOUT = $01
 FADE_STATE_FADEIN = $02
 
+; ==========
+; = Macros =
+; ==========
+macro CheckMSUPresence(labelToJump)
+	lda MSU_ID
+	cmp #'S'
+	bne <labelToJump>
+endmacro
+
+; ========================
+; = Original code hijack =
+; ========================
+
 ; NMI hijack
 org $00FF10
 	jml MSU_UpdateLoop
 
-; Called during attract
-org $C03C43
+; Wait for title screen fix
+; This chunk of code is copied into RAM
+; by the decompression routine, that's why
+; it got a db $80 in the middle
+org $C335AF
+	nop
+	db $80
+	jsl TitleScreenWaitFix
+	nop
+	nop
+
+; Relevant calls to $C70004
+; Found via hex editor by searching for JSL $C70004
+
+org $C01B73
 	jsl MSU_Main
 	
 ; Entering area
 org $C01B8B
 	jsl MSU_Main
 	
-; Exiting area
-org $C22F49
-	jsl MSU_Main
-	
-; Overworld music change
-org $C223F9
-	jsl MSU_Main
-
 ; Entering battle
 org $C01BCE
+	jsl MSU_Main
+	
+org $C01C2A
 	jsl MSU_Main
 	
 ; Exiting battle
 org $C01C3A
 	jsl MSU_Main
 	
-; Opening a black chest
-org $C03CB4
+org $C01C52
 	jsl MSU_Main
 	
-; Restore music after opening a black chest
+org $C01CA9
+	jsl MSU_Main
+	
+org $C01CB7
+	jsl MSU_Main
+	
+org $C01CCF
+	jsl MSU_Main
+	
+; Called during attract
 org $C03C43
 	jsl MSU_Main
 	
+org $C03C69
+	jsl MSU_Main
+	
+org $C03CB4
+	jsl MSU_Main
+	
+org $C161DF
+	jsl MSU_Main
+	
+org $C20462
+	jsl MSU_Main
+	
+org $C223F9
+	jsl MSU_Main
+	
+org $C22F49
+	jsl MSU_Main
+	
+org $C2CBF3
+	jsl MSU_Main
+	
+org $C2CC09
+	jsl MSU_Main
+	
+org $C309D1
+	jsl MSU_Main
+	
+org $C30BE9
+	jsl MSU_Main
+	
+; Title Screen
+org $C31647
+	jsl MSU_Main
+
+org $CD03AB
+	jsl MSU_Main
+	
+org $CD0D70
+	jsl MSU_Main
+	
+org $CD0D81
+	jsl MSU_Main
+	
+; ============
+; = MSU Code =
+; ============
 org $C5F364
 MSU_Main:
 	php
@@ -91,10 +166,7 @@ MSU_Main:
 	
 	sep #$20 ; Set all registers to 8 bit mode
 	
-	; Check if MSU-1 is present
-	lda MSU_ID
-	cmp #'S'
-	bne .CallOriginalRoutine
+	%CheckMSUPresence(.CallOriginalRoutine)
 	
 .MSUFound:
 	lda.w musicCommand
@@ -313,10 +385,7 @@ MSU_UpdateLoop:
 	
 	sep #$20
 
-	; Check if MSU-1 is present
-	lda MSU_ID
-	cmp #'S'
-	bne .CallNMI
+	%CheckMSUPresence(.CallNMI)
 	
 	lda fadeState
 	beq .CallNMI
@@ -367,3 +436,30 @@ MSU_UpdateLoop:
 	pla
 	plp
 	jml $000500
+	
+TitleScreenWaitFix:
+	php
+	rep #$20
+	pha
+	
+	sep #$20
+
+	%CheckMSUPresence(.OriginalCode)
+	
+	rep #$20
+	pla
+	plp
+	rtl
+	
+.OriginalCode
+	rep #$20
+	pla
+	plp
+	
+	; Original code
+-
+	lda $2143
+	and #$0F
+	beq -
+	
+	rtl
