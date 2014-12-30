@@ -14,6 +14,7 @@ The hack has been tested on bsnes 075, higan 094 and SD2SNES.
 * Title screen
 * Credits/Epoch fix
 * Hook fanfare ?
+* Intro: don't switch immediately to Peaceful days when waking up
 * FMV from the PS1 version (Version 2.0)
 
 =====================

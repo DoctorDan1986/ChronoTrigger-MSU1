@@ -25,10 +25,29 @@ MSU_STATUS_DATA_BUSY     = %10000000
 FULL_VOLUME = $FF
 DUCKED_VOLUME = $30
 
-; Variables
-MusicCommand = $1E00
-MusicRequested = $1E01
-CurrentSong = $1EE0
+; =============
+; = Variables =
+; =============
+; Game Variables
+musicCommand = $1E00
+musicRequested = $1E01
+targetVolume = $1E02
+
+; My own variables
+currentSong = $1EE0
+fadeState = $1EE1
+fadeVolume = $1EE2
+fadeTarget = $1EE4
+fadeStep = $1EE6
+
+; fadeState possibles values
+FADE_STATE_IDLE = $00
+FADE_STATE_FADEOUT = $01
+FADE_STATE_FADEIN = $02
+
+; NMI hijack
+org $00FF10
+	jml MSU_UpdateLoop
 
 ; Called during attract
 org $C03C43
@@ -66,8 +85,9 @@ org $C5F364
 MSU_Main:
 	php
 ; Backup A and Y in 16bit mode
-	rep #$20
+	rep #$30
 	pha
+	phx
 	
 	sep #$20 ; Set all registers to 8 bit mode
 	
@@ -77,7 +97,7 @@ MSU_Main:
 	bne .CallOriginalRoutine
 	
 .MSUFound:
-	lda.w MusicCommand
+	lda.w musicCommand
 	; Play Music
 	cmp #$10
 	bne +
@@ -102,11 +122,12 @@ MSU_Main:
 	; Fade
 	cmp #$81
 	bne +
-	bra .CallOriginalRoutine
+	jsr MSU_PrepareFade
 +
-; Call original routine if MSU-1 is not found
+; Call original routine
 .CallOriginalRoutine:
-	rep #$20
+	rep #$30
+	plx
 	pla
 	plp
 	
@@ -114,15 +135,16 @@ MSU_Main:
 	rtl
 	
 .DoNotCallSPCRoutine
-	rep #$20
+	rep #$30
+	plx
 	pla
 	plp
 	rtl
 
 MSU_PlayMusic:
-	lda.w MusicRequested
+	lda.w musicRequested
 	beq .StopMSUMusic
-	cmp CurrentSong
+	cmp currentSong
 	beq .SongAlreadyPlaying
 	sta MSU_AUDIO_TRACK_LO
 	lda #$00
@@ -140,17 +162,18 @@ MSU_PlayMusic:
 	bne .StopMSUMusic
 
 	; Play the song
-	lda.w MusicRequested
+	lda.w musicRequested
 	jsr TrackNeedLooping
 	sta MSU_AUDIO_CONTROL
 	
 	; Set volume
 	lda.b #FULL_VOLUME
 	sta.w MSU_AUDIO_VOLUME
+	sta.w fadeVolume
 	
 	; Only store current song if we were able to play the song
-	lda.w MusicRequested
-	sta CurrentSong
+	lda.w musicRequested
+	sta currentSong
 	
 	; Set SPC music to silence
 	lda #$00
@@ -167,30 +190,89 @@ MSU_PlayMusic:
 	lda #$00
 	sta MSU_AUDIO_CONTROL
 	sta MSU_AUDIO_VOLUME
-	sta CurrentSong
+	sta currentSong
 	sec
 	bra .Exit
 	
 MSU_ResumeMusic:
-	lda.w MusicRequested
-	sta CurrentSong
+	lda.w musicRequested
+	sta currentSong
 	lda #$03
 	sta MSU_AUDIO_CONTROL
 	
 	; Play silence after resuming music to
 	; reload correct SFX samples
 	lda #$10
-	sta.w MusicCommand
+	sta.w musicCommand
 	lda #$00
-	sta.w MusicRequested
+	sta.w musicRequested
 	sec
 	rts
 	
 MSU_PauseMusic:
 	lda #$00
 	sta MSU_AUDIO_CONTROL
-	sta CurrentSong
+	sta currentSong
 	sec
+	rts
+	
+MSU_PrepareFade:
+	; musicRequested = Fade Time
+	lda musicRequested
+	beq .SetVolumeImmediate
+	
+	; fadeStep = (targetVolume-fadeVolume)/fadeTime
+	lda targetVolume
+	sta fadeTarget
+	
+	rep #$20
+	sec
+	sbc fadeVolume
+	; If carry is set, the result is a positive number
+	bcs +
+	
+	; Reverse sign of the result (which in two-complements)
+	; A negative result means a fade-out
+	eor	#$FFFF
+	inc a
+	
+	sep #$30
+	ldx.b #FADE_STATE_FADEOUT
+	stx.w fadeState
+	bra .DoDivision
++
+	sep #$30
+	ldx.b #FADE_STATE_FADEIN
+	stx.w fadeState
+.DoDivision
+	; Do division using SNES division support
+	sta $4204 ; low
+	stz $4205 ; high byte
+	lda musicRequested ; fadeTime
+	asl
+	asl
+	sta $4206
+	
+	; Wait 16 CPU cycles
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+
+	; Result in 4214 / 4215
+	lda $4214
+	sta fadeStep
+	bra .Exit
+
+.SetVolumeImmediate
+	lda targetVolume
+	sta fadeVolume
+	sta MSU_AUDIO_VOLUME
+.Exit:
 	rts
 	
 TrackNeedLooping:
@@ -223,3 +305,65 @@ TrackNeedLooping:
 .noLooping
 	lda #$01
 	rts
+	
+MSU_UpdateLoop:
+	php
+	rep #$20
+	pha
+	
+	sep #$20
+
+	; Check if MSU-1 is present
+	lda MSU_ID
+	cmp #'S'
+	bne .CallNMI
+	
+	lda fadeState
+	beq .CallNMI
+	
+	cmp.b #FADE_STATE_FADEOUT
+	beq .FadeOutUpdate
+	cmp.b #FADE_STATE_FADEIN
+	beq .FadeInUpdate
+	bra .CallNMI
+	
+.FadeOutUpdate:
+	lda fadeVolume
+	sec
+	rep #$20
+	sbc fadeStep
+	cmp fadeTarget
+	bpl +
+	sep #$20
+	lda fadeTarget
++
+	sep #$20
+	sta fadeVolume
+	sta MSU_AUDIO_VOLUME
+	cmp fadeTarget
+	beq .SetToIdle
+	bra .CallNMI
+
+.FadeInUpdate
+	lda fadeVolume
+	clc
+	adc fadeStep
+	cmp fadeTarget
+	bcc +
+	lda fadeTarget
++
+	sta fadeVolume
+	sta MSU_AUDIO_VOLUME
+	cmp fadeTarget
+	beq .SetToIdle
+	bra .CallNMI
+	
+.SetToIdle:
+	lda.b #FADE_STATE_IDLE
+	sta fadeState
+	
+.CallNMI
+	rep #$20
+	pla
+	plp
+	jml $000500
