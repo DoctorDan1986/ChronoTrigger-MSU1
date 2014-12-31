@@ -10,7 +10,6 @@ The hack has been tested on bsnes 075, higan 094 and SD2SNES.
 = TODO =
 ========
 * Use correct timing for fade-in/fade-out
-* Attract fix
 * Credits/Epoch fix
 * Hook fanfare ?
 * Intro: don't switch immediately to Peaceful days when waking up

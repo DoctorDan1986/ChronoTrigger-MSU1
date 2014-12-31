@@ -156,13 +156,16 @@ org $CD0D81
 ; ============
 ; = MSU Code =
 ; ============
-org $C5F364
+org $C5F370
 MSU_Main:
 	php
 ; Backup A and Y in 16bit mode
 	rep #$30
 	pha
 	phx
+	phy
+	phd
+	phb
 	
 	sep #$20 ; Set all registers to 8 bit mode
 	
@@ -199,6 +202,9 @@ MSU_Main:
 ; Call original routine
 .CallOriginalRoutine:
 	rep #$30
+	plb
+	pld
+	ply
 	plx
 	pla
 	plp
@@ -208,6 +214,9 @@ MSU_Main:
 	
 .DoNotCallSPCRoutine
 	rep #$30
+	plb
+	pld
+	ply
 	plx
 	pla
 	plp
@@ -216,6 +225,8 @@ MSU_Main:
 MSU_PlayMusic:
 	lda.w musicRequested
 	beq .StopMSUMusic
+	cmp #$FF
+	beq .SongAlreadyPlaying
 	cmp currentSong
 	beq .SongAlreadyPlaying
 	sta MSU_AUDIO_TRACK_LO
@@ -289,6 +300,9 @@ MSU_PauseMusic:
 	rts
 	
 MSU_PrepareFade:
+	rep #$20
+	lda #$0000
+	sep #$20
 	; musicRequested = Fade Time
 	lda musicRequested
 	beq .SetVolumeImmediate
