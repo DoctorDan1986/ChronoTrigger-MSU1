@@ -62,6 +62,14 @@ endmacro
 org $00FF10
 	jml MSU_UpdateLoop
 
+; Wait for song to finish command
+org $C03CC6
+	jsl MSU_WaitSongFinish
+	nop
+	nop
+	nop
+	nop
+
 ; Wait for title screen fix
 ; This chunk of code is copied into RAM
 ; by the decompression routine, that's why
@@ -335,8 +343,6 @@ MSU_PrepareFade:
 	sta $4204 ; low
 	stz $4205 ; high byte
 	lda musicRequested ; fadeTime
-	asl
-	asl
 	sta $4206
 	
 	; Wait 16 CPU cycles
@@ -364,6 +370,9 @@ MSU_PrepareFade:
 TrackNeedLooping:
 	; 1.01 A Premonition
 	cmp #48
+	beq .noLooping
+	; 1.03 Morning Glow
+	cmp #15
 	beq .noLooping
 	; 1.10 Good Night
 	cmp #43
@@ -476,4 +485,34 @@ TitleScreenWaitFix:
 	and #$0F
 	beq -
 	
+	rtl
+	
+MSU_WaitSongFinish:
+	php
+	rep #$20
+	pha
+	
+	sep #$20
+	%CheckMSUPresence(.OriginalCode)
+	
+	lda MSU_STATUS
+	and.b #(MSU_STATUS_AUDIO_PLAYING|MSU_STATUS_AUDIO_REPEAT)
+	bne +
+	inx
++
+	rep #$20
+	pla
+	plp
+	rtl
+	
+.OriginalCode
+	rep #$20
+	pla
+	plp
+	
+	lda $2143
+	and #$0F
+	bne +
+	inx
++
 	rtl

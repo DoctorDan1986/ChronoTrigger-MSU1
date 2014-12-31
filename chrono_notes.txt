@@ -253,6 +253,14 @@ $7E/5AAA AD 43 21    LDA $2143  [$00:2143]   A:2100 X:FFFF Y:0090 P:envMxdIZc
 $7E/5AAD 29 0F       AND #$0F                A:2100 X:FFFF Y:0090 P:envMxdIZc
 $7E/5AAF F0 F9       BEQ $F9    [$5AAA]   
 
+; Wait for song to finish in the game introduction
+$C0/3CC6 AD 43 21    LDA $2143  [$00:2143]   A:01DC X:0669 Y:0669 P:envMxdizc
+$C0/3CC9 29 0F       AND #$0F                A:010F X:0669 Y:0669 P:envMxdizc
+$C0/3CCB D0 01       BNE $01    [$3CCE]      A:010F X:0669 Y:0669 P:envMxdizc
+$C0/3CCD E8          INX                     A:0100 X:0669 Y:0669 P:envMxdiZc
+$C0/3CCE 18          CLC                     A:0100 X:066A Y:0669 P:envMxdizc
+$C0/3CCF 60          RTS                     A:0100 X:066A Y:0669 P:envMxdizc
+
 ============
 = Routines =
 ============
